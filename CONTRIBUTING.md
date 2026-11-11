@@ -1,18 +1,19 @@
 # Contributing
 
-Read [AGENTS.md](AGENTS.md) and the affected service README. Keep changes within the agreed interview scope in [the module audit](docs/development/module-functional-audit.md). Services own their dependencies; shared transport changes start in `proto/`.
+## Branches and pull requests
 
-Use a branch and a pull request. Run [the checks for affected services](docs/development/validation.md). Regenerate Swagger when public API annotations change, and Go/Python clients together when protobuf changes. Record what actually ran, including skipped tests and external dependencies.
+1. Branch off `master`. Name the branch after the task: `feature/<topic>`, `fix/<topic>`, `docs/<topic>`, `ci/<topic>`.
+2. Keep commits small, one logical change each, in the form `type(scope): summary` — for example `feat(backend): add interview options` or `test(feedback): cover retry queue`.
+3. Open a pull request into `master` and fill in the template.
+4. Merge only after a teammate's review and green checks for the services you touched.
 
-Before staging:
+## Before you push
 
-```sh
-python tools/check_repository.py
-git status --short
-git diff --check
-git diff --cached --check
-```
+- Run the tests of every service you changed (see the table in the [README](README.md#working-on-one-service)).
+- Regenerate Swagger (`make swagger` in `backend/`) when public API annotations change.
+- Change `proto/` first and regenerate Go and Python clients together when the gRPC contract changes.
+- Check what you are about to commit: `git status --short`, `git diff --cached`.
 
-Stage intended paths explicitly, then inspect `git diff --cached --stat` and `git diff --cached`. Existing staged changes belong to their author; do not reset them. Commit only after this review. No repository script commits or pushes automatically.
+## Keep out of the repository
 
-Keep `.env` files, API keys, virtual environments, `node_modules`, binaries, logs and runtime artifacts local. Commit `.env.example` with placeholders. Coursework reports live separately in `jrpc_labs456/`; historical validation results do not describe a new run. Preserve third-party skill licenses and source attribution in `.agents/skills/`.
+`.env` files and API keys, virtual environments, `node_modules`, compiled binaries, `__pycache__`, logs and runtime artifacts. Commit `.env.example` with placeholders instead.
