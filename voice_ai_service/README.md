@@ -1,0 +1,21 @@
+# Voice AI service
+
+Python source is in `src/voice_ai_service/`. The package contains the API entry point, gRPC server, interview services, repositories, interfaces, and schemas.
+
+Prompt templates live in `prompts/` at the service root and must be shipped with the application. `voice_conversation/session.py` owns interview transitions, `generation.py` uses the LangChain agent and structured output parser, and `policy.py` composes the interview instructions. The agent receives conversation history from the persisted snapshot as context. PostgreSQL remains the transactional source of memory, records and feedback rather than a separate agent checkpointer. `question_bank_seed_v1.py` and `question_bank_seed_v2.py` are imported by the baseline migration, so keep them at their current paths.
+
+Copy `.env.example` to `.env` and configure the credentials and database URL. After installing `requirements.txt`, start the service from `src/` with `uvicorn voice_ai_service.main:app --reload`.
+
+New interviews use scenarioVersion 2: five oral questions, each followed by two context-dependent clarifications, in Ukrainian or English. Gemini transcribes and evaluates complete WebM/Opus answers. The server computes a 0–100 score from correctness, completeness and reasoning, then aggregates the latest score per main question. Gemini TTS returns WAV, converted to MP3 with FFmpeg. Set `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_TTS_MODEL`, and optionally `TTS_VOICE_UK` and `TTS_VOICE_EN` (Gemini voice names such as `Kore`). A separate Google Cloud TTS key is not used. Install FFmpeg outside Docker; the image includes it. The TTS request follows the [Gemini speech API](https://ai.google.dev/gemini-api/docs/speech-generation).
+
+The supported modes are `behavioral`, `algorithms` and `system-design`. Behavioral interviews explore motivation, teamwork and learning, using examples from work, studies or personal projects. Oral algorithms questions and their assessment cover correctness, edge cases, alternative approaches, and both time and space complexity in Big O notation; written code is not required. System design questions and their assessment use the actual CV, stack, experience and target role. AI/ML profiles emphasize AI services and inference costs, frontend profiles emphasize client architecture and API/delivery boundaries. The candidate explains service choices and budget, performance and reliability tradeoffs. Hypothetical budgets/workloads must be stated explicitly; missing CV details and current provider prices must not be invented.
+
+Interviews use the adaptive gRPC stream with one recording per question. See [the stream contract](../docs/architecture/adaptive-interview.md).
+
+The `tests/` directory contains repository tests. The `docs/` directory is reserved for service-specific notes.
+
+Run `alembic -c src/voice_ai_service/app/alembic.ini upgrade head` from this directory before starting the service outside Docker. The Docker image runs migrations on startup. A gRPC interview reuses the same AI conversation row when its `interview_id` is seen again; legacy internal HTTP starts have no interview ID. Repository tests run with `python -m unittest discover -s tests` and require `aiosqlite` in the test environment.
+
+The schema is created by a single baseline migration, `alembic/versions/0001_baseline.py`. Its revision id is `0008` (the head of the former chain), so databases created before the squash are already current. Add new changes as revisions on top of `0008`. Each AI conversation stores a JSON state snapshot and final feedback. The gRPC startup restores the snapshot for an existing interview ID; a successful answer commits its question record and the updated snapshot together.
+
+Adaptive transitions reload the snapshot under a PostgreSQL row lock, committing answer records, next question, feedback and PDF outbox atomically. Every answer has a UUID and question ID; duplicates replay persisted state, conflicting payloads or stale questions are rejected. The snapshot stores digests, not raw audio. The legacy graph keeps its last-audio digest behavior. Run tests with `PYTHONPATH=src python -m unittest discover -s tests` after installing `requirements-dev.txt`.

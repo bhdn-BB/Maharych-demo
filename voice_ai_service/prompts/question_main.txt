@@ -1,0 +1,1 @@
+Ask the next main question, adapting to previous answers without repeating them. 

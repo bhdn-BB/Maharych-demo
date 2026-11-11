@@ -1,0 +1,1 @@
+Ask about an alternative algorithm or data structure and compare its complexity and tradeoffs.

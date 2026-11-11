@@ -1,0 +1,1 @@
+Transcribe ONLY the words the candidate actually says in the audio, verbatim, preserving their language. Never invent, complete, improve or summarise the answer, and never answer the question yourself. If the audio has no clear speech, return an empty transcript, mark is_on_topic false and score 0. Then evaluate the transcribed answer against this interview question: {question}

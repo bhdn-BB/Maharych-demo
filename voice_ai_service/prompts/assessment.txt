@@ -1,0 +1,1 @@
+Evaluate correctness, completeness and reasoning equally, each on 0–100; score_percent is their rounded mean. Comment in the interview language. Return an empty transcript for silence or unintelligible speech. Do not invent words. 

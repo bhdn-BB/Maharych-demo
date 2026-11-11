@@ -1,0 +1,36 @@
+.nx/
+.vscode
+.idea/
+tmp/
+artifacts/
+*.tsbuildinfo
+
+# Local configuration and generated files
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.venv-local/
+.venv-*/
+.tools/
+
+# Dependencies, build output, machine-specific settings and logs
+node_modules/
+.next/
+dist/
+coverage/
+*.log
+*.exe
+*.test
+*.out
+.DS_Store
+Thumbs.db
+.claude/settings.local.json
+.codex/
+backend/mock-ai
+
+# Document editor lock files
+~$*

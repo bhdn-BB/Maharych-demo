@@ -1,0 +1,34 @@
+{
+  "name": "voice-ai",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uvicorn voice_ai_service.main:app --reload",
+        "cwd": "voice_ai_service/src"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uvicorn voice_ai_service.main:app --host 0.0.0.0 --port 8000",
+        "cwd": "voice_ai_service/src"
+      }
+    },
+    "proto": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "make proto",
+        "cwd": "voice_ai_service"
+      }
+    },
+    "proto-clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "make proto-clean",
+        "cwd": "voice_ai_service"
+      }
+    }
+  }
+}

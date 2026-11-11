@@ -1,0 +1,188 @@
+services:
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:80"
+    volumes:
+      - ./deploy/nginx/docker.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: maharych
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-maharych}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD in .env}
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      DB_NAME: maharych
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (>= 32 chars) in .env}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      CORS_ORIGINS: http://localhost:8090
+      AI_SERVICE_GRPC_ADDR: voice_ai:50051
+      AI_SERVICE_HTTP_URL: http://voice_ai:8000
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maharych}:${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD in .env}@rabbitmq:5672/
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      voice_ai:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/api/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  voice_ai:
+    build: ./voice_ai_service
+    restart: unless-stopped
+    expose:
+      - "8000"
+      - "50051"
+    env_file:
+      - ./voice_ai_service/.env
+      # The root .env wins when present, so GEMINI_API_KEY can live in one place.
+      - path: ./.env
+        required: false
+    environment:
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@db:5432/maharych
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maharych}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      RUN_OUTBOX_RELAY: "false" # the relay is its own service below
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  feedback_relay:
+    build: ./voice_ai_service
+    restart: unless-stopped
+    command: ["python", "-m", "voice_ai_service.relay"]
+    env_file:
+      - ./voice_ai_service/.env
+      # The root .env wins when present, so GEMINI_API_KEY can live in one place.
+      - path: ./.env
+        required: false
+    environment:
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@db:5432/maharych
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maharych}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      HEARTBEAT_FILE: /tmp/relay.heartbeat
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      voice_ai: # applies the Alembic migrations the relay depends on
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,time; sys.exit(0 if time.time()-os.path.getmtime('/tmp/relay.heartbeat')<60 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  feedback_worker:
+    build: ./feedback_service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/maharych
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-maharych}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      HEARTBEAT_FILE: /tmp/worker.heartbeat
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      voice_ai:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,time; sys.exit(0 if time.time()-os.path.getmtime('/tmp/worker.heartbeat')<90 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    restart: unless-stopped
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_BACKEND_URL: http://localhost:8090
+    expose:
+      - "3000"
+    environment:
+      AUTH_TRUST_HOST: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env}
+      NEXTAUTH_URL: http://localhost:8090
+      AUTH_URL: http://localhost:8090
+      BACKEND_URL: http://backend:8080
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:8090
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  pgdata:
+  rabbitmqdata:

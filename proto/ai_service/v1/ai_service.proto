@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package ai_service.v1;
+
+option go_package = "maharych-api/src/internal/genproto/aiservicepb";
+
+// AIService handles real-time voice interviews between candidates and the AI interviewer.
+service AIService {
+  // StreamInterview opens a bidirectional stream for a single interview session.
+  rpc StreamInterview(stream AudioStreamRequest) returns (stream AudioStreamResponse);
+}
+
+message AudioMetadata {
+  string mime_type = 1;
+  int32 sample_rate = 2;
+  int32 channels = 3;
+  string encoding = 4;
+}
+
+message CandidateInfo {
+  string name = 1;
+  string surname = 2;
+  string email = 3;
+  string phone_number = 4;
+  optional string linkedin_url = 5;
+  optional string github_url = 6;
+  int32 years_of_experience = 7;
+  repeated string tech_stack = 8;
+  string resume = 9;
+  string applied_at = 10; // ISO date string (YYYY-MM-DD)
+  bool is_active = 11;
+}
+
+enum Grade {
+  GRADE_UNSPECIFIED = 0;
+  GRADE_INTERN = 1;
+  GRADE_JUNIOR = 2;
+  GRADE_MIDDLE = 3;
+  GRADE_SENIOR = 4;
+  GRADE_LEAD = 5;
+}
+
+message PositionInfo {
+  string title = 1;
+  string description = 2;
+  Grade grade = 3;
+  string department = 4;
+  int32 required_experience = 5;
+  repeated string required_skills = 6;
+  repeated string nice_to_have_skills = 7;
+  optional int32 salary_min = 8;
+  optional int32 salary_max = 9;
+  bool is_remote = 10;
+  optional string location = 11;
+}
+
+message AudioStreamStartupOptions {
+  string interview_id = 1;
+  string user_id = 2;
+  AudioMetadata metadata = 3;
+  CandidateInfo candidate = 4;
+  PositionInfo position = 5;
+  string focus = 6;
+  // Legacy catalog-task snapshot, removed with task-based interviews.
+  reserved 7, 8, 9;
+  reserved "task_title", "task_description", "task_evaluation_criteria";
+  string language = 10; // uk or en
+  int32 scenario_version = 11; // Only 2 (adaptive dialogue) is supported; legacy tasks are rejected.
+  string voice_id = 12; // Empty uses the configured language default.
+}
+
+message AudioStreamRequest {
+  AudioStreamStartupOptions options = 1;
+  bytes audio_data = 2;
+  int64 timestamp_ms = 3;
+  string answer_id = 4;
+  string question_id = 5;
+  string command = 6; // finish, replay_audio, start_recording or skip_recording
+}
+
+message AudioStreamResponse {
+  enum ResponseType {
+    RESPONSE_TYPE_UNSPECIFIED = 0;
+    TRANSCRIPTION = 1;
+    AI_AUDIO = 2;
+    AI_TEXT = 3;
+    STAGE_UPDATE = 4;
+    ERROR = 5;
+    INTERVIEW_FINISHED = 6;
+  }
+
+  ResponseType type = 1;
+  string transcription = 2;
+  bytes ai_audio_data = 3;
+  string ai_text = 4;
+  string stage = 5;
+  int32 current_question = 6;
+  int32 total_questions = 7;
+  string error = 8;
+  string question_id = 9;
+  string answer_id = 10;
+  string event_id = 11;
+  string audio_mime_type = 12;
+}

@@ -1,0 +1,59 @@
+{
+  "name": "frontend",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm dev",
+        "cwd": "frontend"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm build",
+        "cwd": "frontend"
+      },
+      "inputs": [
+        "{projectRoot}/src/**/*",
+        "{projectRoot}/public/**/*",
+        "{projectRoot}/package.json",
+        "{projectRoot}/next.config.ts",
+        "{projectRoot}/tsconfig.json",
+        "{projectRoot}/tailwind.config.ts",
+        "{projectRoot}/postcss.config.js"
+      ],
+      "outputs": ["{projectRoot}/.next"]
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm start",
+        "cwd": "frontend"
+      },
+      "dependsOn": ["build"]
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm lint",
+        "cwd": "frontend"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm test",
+        "cwd": "frontend"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm format",
+        "cwd": "frontend"
+      }
+    }
+  }
+}

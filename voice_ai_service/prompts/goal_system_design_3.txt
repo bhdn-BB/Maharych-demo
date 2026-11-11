@@ -1,0 +1,1 @@
+Ask how the candidate would store, cache and keep data consistent in the service, with cost and performance trade-offs.

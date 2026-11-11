@@ -1,0 +1,1 @@
+Ask how the candidate would monitor, secure and operate the service in production within the budget, including incident response.

@@ -1,0 +1,1 @@
+Ask how the design changes under a budget, traffic or reliability constraint and why.

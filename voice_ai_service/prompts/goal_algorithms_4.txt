@@ -1,0 +1,1 @@
+Ask about a dynamic programming, greedy, recursion or binary search problem, justifying correctness and its time and space complexity.

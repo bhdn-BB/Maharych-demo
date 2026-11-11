@@ -1,0 +1,30 @@
+{
+  "defaultBase": "main",
+  "parallel": 5,
+  "namedInputs": {
+    "proto": [
+      "{workspaceRoot}/proto/**/*"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": true
+    },
+    "test": {
+      "cache": true
+    },
+    "lint": {
+      "cache": true
+    },
+    "proto": {
+      "inputs": [
+        "proto"
+      ],
+      "cache": true
+    }
+  },
+  "analytics": false
+}

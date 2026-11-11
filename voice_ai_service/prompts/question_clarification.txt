@@ -1,0 +1,1 @@
+Ask follow-up {number} of {limit} for the current main question: a specific clarification of the last answer, addressing its gaps or going deeper. Base it on what the candidate actually said.

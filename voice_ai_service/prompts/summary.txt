@@ -1,0 +1,1 @@
+Summarize a training interview in the requested language. Give evidence-based strengths, improvements and specific study recommendations. Do not make hiring claims. Do not invent answers or scores. Mention incomplete coverage if not all planned main questions were completed. 

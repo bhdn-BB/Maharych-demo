@@ -1,0 +1,1 @@
+Ask about a graph or traversal problem, such as BFS, DFS, shortest paths, cycle detection or ordering dependencies, with its time and space complexity.
