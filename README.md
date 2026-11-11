@@ -1,65 +1,72 @@
 # Maharych
 
-Українською: [що реалізовано та як взаємодіють сервіси](README.uk.md).
+[![backend](https://github.com/bhdn-BB/Maharych-demo/actions/workflows/backend.yml/badge.svg)](https://github.com/bhdn-BB/Maharych-demo/actions/workflows/backend.yml)
+[![feedback-service](https://github.com/bhdn-BB/Maharych-demo/actions/workflows/feedback-service.yml/badge.svg)](https://github.com/bhdn-BB/Maharych-demo/actions/workflows/feedback-service.yml)
+[![voice-ai-service](https://github.com/bhdn-BB/Maharych-demo/actions/workflows/voice-ai-service.yml/badge.svg)](https://github.com/bhdn-BB/Maharych-demo/actions/workflows/voice-ai-service.yml)
+[![nginx](https://github.com/bhdn-BB/Maharych-demo/actions/workflows/nginx.yml/badge.svg)](https://github.com/bhdn-BB/Maharych-demo/actions/workflows/nginx.yml)
 
-Maharych is a web application for conducting AI-assisted interviews. Nginx serves a Next.js frontend and Go API through one local address. Python services handle the Gemini conversation and RabbitMQ-backed PDF export; services share a gRPC contract.
+Maharych is a web application for practising IT job interviews by voice. A candidate fills in a profile, picks a role, level, track and language, answers questions out loud and gets a transcript, scores and recommendations. Finished interviews stay in the history, and a background worker turns each result into a PDF report.
 
-The current scope is defined in [specification v8](reports/technical-spec-v8.md): an adaptive oral interview in Ukrainian or English, five main questions with two follow-ups each, server-generated question speech, persistent feedback and PDF export. See the [launch and demo runbook](docs/development/demo-runbook.md) and [validation evidence](docs/development/adaptive-validation.md).
+## How it works
+
+```text
+browser ──► nginx :8090 ──► frontend (Next.js)      pages, NextAuth
+                       └──► backend (Go, Gin)       REST API, JWT, WebSocket audio
+                                  │ gRPC
+                                  ▼
+                            voice_ai (Python)       adaptive dialogue, Gemini, TTS, scoring
+                                  │ outbox → RabbitMQ
+                                  ▼
+                            feedback_worker         PDF report → PostgreSQL
+```
+
+- **Interview flow:** five main questions with up to two follow-ups each, in Ukrainian or English. Question speech is generated on the server; the candidate's answers are streamed as audio over WebSocket.
+- **Results:** transcript, per-question scores, strengths and recommendations, plus a downloadable PDF once the worker has rendered it.
+- **Accounts:** email/password or Google sign-in; admins are listed in `ADMIN_EMAILS`.
 
 ## Repository layout
 
 ```text
-backend/
-  src/                Go API, authentication, persistence, and WebSocket bridge
-  tests/              Reserved for integration fixtures; unit tests live beside Go code
-  docs/               Generated API reference
-frontend/
-  src/                Next.js application and UI
-  tests/              Frontend hook and authentication tests
-  docs/               Frontend documentation
-voice_ai_service/
-  src/                Python interview and voice processing service
-  tests/              Dialogue, persistence, provider and transport tests
-  docs/               Voice AI documentation
-feedback_service/      RabbitMQ consumer and PDF report generator
-proto/                 Shared Protocol Buffers definitions
-deploy/                Nginx configurations and native Windows environment example
-tools/                 Local startup, preflight and repository checks
-docs/                  Architecture, development and validation instructions
-reports/               Specifications and document generation sources
-jrpc_labs456/          Coursework reports and historical evidence
-.github/workflows/     Executable service checks
-docker-compose.yml     Local multi-service setup
+frontend/              Next.js + React + TypeScript UI (src/app routes, components, api clients, hooks)
+backend/               Go API: src/cmd/server entry point, src/internal domain modules, docs/ Swagger
+voice_ai_service/      Python FastAPI + gRPC service: dialogue, Gemini, TTS, evaluation, outbox relay
+feedback_service/      RabbitMQ consumer that renders and stores PDF reports (ReportLab)
+proto/                 Shared Protocol Buffers contract and client generator
+deploy/nginx/          Gateway configuration for Docker Compose
+tests/system/          End-to-end API checks against a running stack
+.github/workflows/     CI: build and test per service, nginx config check
+docker-compose.yml     Full local stack
 ```
 
-Each service keeps its own dependencies and build configuration. The Go API groups handlers, services, repositories, and models in `backend/src/internal/`; domain tests live beside their source. The Python service separates interfaces, repositories, services, and transport code in `voice_ai_service/src/voice_ai_service/app/`, with repository and stream tests in `voice_ai_service/tests/`.
+Each service owns its dependencies, Dockerfile and README. The Go API follows `handler → service → repository` inside `backend/src/internal/<module>`, with unit tests next to the code. The Python service separates interfaces, repositories, services and transport in `voice_ai_service/src/voice_ai_service/app/`.
 
 ## Run locally
 
 1. Install Docker with Compose.
-2. Copy the root `.env.example` to `.env` and set distinct random `JWT_SECRET` and `NEXTAUTH_SECRET` values (at least 32 characters). Google OAuth credentials are optional. Copy `voice_ai_service/.env.example` to `voice_ai_service/.env` and set `GEMINI_API_KEY`. The same key powers question generation, audio evaluation and Gemini TTS. Configure models with `GEMINI_MODEL` and `GEMINI_TTS_MODEL`; access and quotas must be checked with your project. Never overwrite an existing `.env`.
-3. Start Docker Desktop. In PowerShell, run the following from the repository root:
+2. Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`, `RABBITMQ_PASSWORD` and two different random values for `JWT_SECRET` and `NEXTAUTH_SECRET` (at least 32 characters). Google OAuth is optional.
+3. Copy `voice_ai_service/.env.example` to `voice_ai_service/.env` and set `GEMINI_API_KEY`; models are chosen with `GEMINI_MODEL` and `GEMINI_TTS_MODEL`.
+4. From the repository root:
 
-   ```powershell
-   cd D:\maharych-system
+   ```sh
    docker compose up --build -d
+   docker compose ps
    ```
 
-   Check service status with `docker compose ps` and view logs with `docker compose logs -f`.
-4. Open **http://localhost:8090**. Health: `http://localhost:8090/api/v1/health`; API docs: `http://localhost:8090/swagger/index.html`. Nginx routes `/api/auth/` to NextAuth and `/api/v1/` (including WebSocket) to Go. Application services and RabbitMQ remain internal; PostgreSQL binds to loopback for local tooling. A completed interview's result page offers a PDF download after the worker has generated it.
+5. Open **http://localhost:8090**. Health check: `/api/v1/health`, API reference: `/swagger/index.html`.
 
-Google OAuth callback for this setup: `http://localhost:8090/api/auth/callback/google`. Use email/password without OAuth. Stop with `docker compose stop` to preserve data.
+For Google sign-in, register `http://localhost:8090/api/auth/callback/google` as the redirect URI. Stop the stack with `docker compose stop` to keep the data.
 
-For Windows without Docker, follow the [native runbook](docs/development/native-runbook.md). It uses the same public address and a separate Nginx configuration with loopback upstreams.
+### Working on one service
 
-For service-level development, use `frontend` with `pnpm install` and `pnpm dev`, `backend` with `make run` after copying `backend/.env.example` to `backend/.env`, or `voice_ai_service/src` with `uvicorn voice_ai_service.main:app --reload` after installing each service's dependencies and configuring its environment.
+| Service | Setup | Run | Test |
+| --- | --- | --- | --- |
+| frontend | `pnpm install` | `pnpm dev` | `pnpm test` |
+| backend | copy `backend/.env.example` to `backend/.env` | `make run` | `go test ./...` |
+| voice_ai_service | `pip install -r requirements-dev.txt` | `uvicorn voice_ai_service.main:app --reload` (from `src/`) | `PYTHONPATH=src python -m unittest discover -s tests` |
+| feedback_service | `pip install -r requirements.txt` | `python worker.py` | `python -m unittest test_worker -v` |
 
-## Verification and contribution
+Unit tests use provider substitutes, so they do not exercise a live microphone → Gemini → PDF run; check that flow manually in the running stack.
 
-See [validation commands and current results](docs/development/adaptive-validation.md), [contribution instructions](CONTRIBUTING.md), and the [repository structure](docs/development/repository-layout.md). Each service has its own README and dependencies; root Nx descriptors are optional metadata, not a required package installation.
+## Contributing
 
-Tests with provider substitutes do not prove a live microphone → Gemini → result → PDF flow. Check the validation record before claiming end-to-end readiness.
-
-## Agent workflows
-
-Repository instructions live in `AGENTS.md`, with backend-specific rules in `backend/AGENTS.md`. Shared Go/auth skills are stored once in `.agents/skills/`. See [development instructions](docs/development/agent-workflows.md) for their scope, source versions, and CI checks.
+Work happens on short-lived branches and lands in `master` through pull requests with review and green CI. See [CONTRIBUTING.md](CONTRIBUTING.md).
