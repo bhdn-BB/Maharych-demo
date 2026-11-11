@@ -1,0 +1,21 @@
+name: nginx
+
+on:
+  push:
+    branches: [master]
+    paths: ["deploy/nginx/**", ".github/workflows/nginx.yml"]
+  pull_request:
+    paths: ["deploy/nginx/**", ".github/workflows/nginx.yml"]
+
+jobs:
+  config-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: nginx -t
+        run: >
+          docker run --rm
+          --add-host backend:127.0.0.1
+          --add-host frontend:127.0.0.1
+          -v "$PWD/deploy/nginx/docker.conf:/etc/nginx/nginx.conf:ro"
+          nginx:stable-alpine nginx -t
