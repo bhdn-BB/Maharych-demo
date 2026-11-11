@@ -1,0 +1,21 @@
+{
+  "name": "mock-ai",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go run ./src/cmd/mock-ai",
+        "cwd": "backend"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go build -o bin/mock-ai ./src/cmd/mock-ai",
+        "cwd": "backend"
+      },
+      "outputs": ["{workspaceRoot}/backend/bin/mock-ai"]
+    }
+  }
+}

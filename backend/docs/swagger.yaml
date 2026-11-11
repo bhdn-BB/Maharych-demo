@@ -1,0 +1,809 @@
+basePath: /api/v1
+definitions:
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  maharych-api_src_internal_model.InterviewOption:
+    properties:
+      category:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      key:
+        type: string
+      label:
+        type: string
+      sortOrder:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  src_internal_auth.AuthRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  src_internal_auth.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/src_internal_auth.UserResponse'
+    type: object
+  src_internal_auth.GoogleAuthRequest:
+    properties:
+      id_token:
+        type: string
+    required:
+    - id_token
+    type: object
+  src_internal_auth.UserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+    type: object
+  src_internal_feedback.QuestionAnswer:
+    properties:
+      answer:
+        type: string
+      clarification:
+        type: boolean
+      comment:
+        type: string
+      question:
+        type: string
+      question_id:
+        type: string
+      score:
+        type: integer
+      topic_index:
+        type: integer
+    type: object
+  src_internal_feedback.Report:
+    properties:
+      language:
+        type: string
+      overall_score:
+        type: number
+      partial:
+        type: boolean
+      questions:
+        items:
+          $ref: '#/definitions/src_internal_feedback.QuestionAnswer'
+        type: array
+      recommendation:
+        type: string
+      score_scale:
+        type: integer
+      summary:
+        type: string
+      top_strengths:
+        items:
+          type: string
+        type: array
+      top_weaknesses:
+        items:
+          type: string
+        type: array
+      topic_scores:
+        items:
+          $ref: '#/definitions/src_internal_feedback.TopicScore'
+        type: array
+    type: object
+  src_internal_feedback.TopicScore:
+    properties:
+      comment:
+        type: string
+      question_type:
+        type: string
+      score:
+        type: integer
+      strengths:
+        items:
+          type: string
+        type: array
+      topic_index:
+        type: integer
+      weaknesses:
+        items:
+          type: string
+        type: array
+    type: object
+  src_internal_interview.ListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/src_internal_interview.Response'
+        type: array
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+    type: object
+  src_internal_interview.Response:
+    properties:
+      endedAt:
+        type: string
+      focus:
+        type: string
+      id:
+        type: string
+      language:
+        type: string
+      level:
+        type: string
+      position:
+        type: string
+      scenarioVersion:
+        type: integer
+      startedAt:
+        type: string
+      status:
+        type: string
+      taskDescription:
+        type: string
+      taskId:
+        type: string
+      taskTitle:
+        type: string
+      userId:
+        type: integer
+      voiceId:
+        type: string
+    type: object
+  src_internal_interview.StartRequest:
+    properties:
+      focus:
+        type: string
+      language:
+        enum:
+        - uk
+        - en
+        type: string
+      level:
+        type: string
+      position:
+        type: string
+      voiceId:
+        enum:
+        - anna
+        - sophia
+        - daniel
+        - alex
+        type: string
+    required:
+    - focus
+    - level
+    - position
+    type: object
+  src_internal_interviewoption.OptionsResponse:
+    properties:
+      focuses:
+        items:
+          $ref: '#/definitions/maharych-api_src_internal_model.InterviewOption'
+        type: array
+      levels:
+        items:
+          $ref: '#/definitions/maharych-api_src_internal_model.InterviewOption'
+        type: array
+      positions:
+        items:
+          $ref: '#/definitions/maharych-api_src_internal_model.InterviewOption'
+        type: array
+    type: object
+  src_internal_profile.PutRequest:
+    properties:
+      githubUrl:
+        type: string
+      linkedinUrl:
+        type: string
+      name:
+        type: string
+      phoneNumber:
+        type: string
+      resume:
+        type: string
+      surname:
+        type: string
+      techStack:
+        items:
+          type: string
+        type: array
+      yearsOfExperience:
+        type: integer
+    type: object
+  src_internal_profile.Response:
+    properties:
+      githubUrl:
+        type: string
+      linkedinUrl:
+        type: string
+      name:
+        type: string
+      phoneNumber:
+        type: string
+      resume:
+        type: string
+      surname:
+        type: string
+      techStack:
+        items:
+          type: string
+        type: array
+      yearsOfExperience:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Backend API for Maharych system
+  title: Maharych API
+  version: "1.0"
+paths:
+  /auth/google:
+    post:
+      consumes:
+      - application/json
+      description: Verifies a Google ID token and returns a backend JWT. Creates the
+        user if new, or links to an existing account by email.
+      parameters:
+      - description: Google ID token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/src_internal_auth.GoogleAuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_auth.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Authenticate with Google
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with email and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/src_internal_auth.AuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_auth.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account with email and password
+      parameters:
+      - description: Registration credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/src_internal_auth.AuthRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/src_internal_auth.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /health:
+    get:
+      description: Returns service health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - health
+  /interview-options:
+    get:
+      description: Returns all available levels, positions, and focus areas
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_interviewoption.OptionsResponse'
+      summary: Get interview options
+      tags:
+      - interview-options
+  /interviews:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number, starting at 1
+        in: query
+        name: page
+        type: integer
+      - description: Items per page, up to 50
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_interview.ListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List the current user's interviews
+      tags:
+      - interviews
+    post:
+      consumes:
+      - application/json
+      description: Starts a behavioral, oral algorithms, or CV-adapted system-design
+        interview without a catalog task
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Interview options
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/src_internal_interview.StartRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/src_internal_interview.Response'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Start a new interview
+      tags:
+      - interviews
+  /interviews/{id}:
+    get:
+      description: Returns a single interview belonging to the authenticated user
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Interview ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_interview.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get an interview by ID
+      tags:
+      - interviews
+  /interviews/{id}/audio-ticket:
+    post:
+      description: Returns a 30-second, single-use ticket that authorizes one audio
+        WebSocket handshake for this interview
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Interview ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Issue a one-time WebSocket ticket
+      tags:
+      - interviews
+  /interviews/{id}/end:
+    post:
+      description: Requests asynchronous finalization of saved answers. Returns 202
+        with status "finalizing"; poll GET /interviews/{id} until it becomes completed
+        or abandoned. Repeating the call is safe.
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Interview ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_interview.Response'
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/src_internal_interview.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: End an interview
+      tags:
+      - interviews
+  /interviews/{id}/feedback:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Interview ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_feedback.Report'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get completed interview feedback
+      tags:
+      - interviews
+  /interviews/{id}/report.pdf:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Interview ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Download the completed interview PDF report
+      tags:
+      - interviews
+  /profile:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_profile.Response'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get the authenticated user's candidate profile
+      tags:
+      - profile
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Candidate profile
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/src_internal_profile.PutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/src_internal_profile.Response'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create or replace the authenticated user's candidate profile
+      tags:
+      - profile
+  /profile/resume/parse:
+    post:
+      consumes:
+      - application/octet-stream
+      parameters:
+      - description: 'File type: pdf or docx'
+        in: query
+        name: kind
+        required: true
+        type: string
+      - description: Resume file bytes
+        in: body
+        name: file
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Parse a PDF or DOCX resume
+      tags:
+      - profile
+  /voices/{voice}/preview:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 'Voice: anna, sophia, daniel or alex'
+        in: path
+        name: voice
+        required: true
+        type: string
+      - description: 'Language: uk or en'
+        in: query
+        name: language
+        required: true
+        type: string
+      produces:
+      - audio/mpeg
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Preview an interviewer voice
+      tags:
+      - voices
+swagger: "2.0"
