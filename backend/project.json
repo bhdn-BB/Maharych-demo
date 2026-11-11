@@ -1,0 +1,62 @@
+{
+  "name": "backend",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go run ./src/cmd/server",
+        "cwd": "backend"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "make build",
+        "cwd": "backend"
+      },
+      "inputs": [
+        "{projectRoot}/**/*.go",
+        "{projectRoot}/go.mod",
+        "{projectRoot}/go.sum"
+      ],
+      "outputs": ["{projectRoot}/bin"]
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./bin/maharych-api",
+        "cwd": "backend"
+      },
+      "dependsOn": ["build"]
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "make test",
+        "cwd": "backend"
+      }
+    },
+    "swagger": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "make swagger",
+        "cwd": "backend"
+      }
+    },
+    "proto": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "make proto",
+        "cwd": "backend"
+      }
+    },
+    "tidy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "make tidy",
+        "cwd": "backend"
+      }
+    }
+  }
+}
