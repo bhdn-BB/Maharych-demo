@@ -1,0 +1,123 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 20% 4%;
+    --foreground: 240 10% 95%;
+
+    --card: 240 15% 8%;
+    --card-foreground: 240 10% 95%;
+
+    --popover: 240 15% 8%;
+    --popover-foreground: 240 10% 95%;
+
+    --primary: 265 90% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 15% 14%;
+    --secondary-foreground: 240 10% 85%;
+
+    --muted: 240 12% 12%;
+    --muted-foreground: 240 8% 55%;
+
+    --accent: 265 60% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 265 30% 20%;
+    --input: 240 15% 14%;
+    --ring: 265 90% 65%;
+
+    --radius: 0.75rem;
+
+    --glass-bg: 240 20% 8% / 0.6;
+    --glass-border: 265 40% 40% / 0.2;
+    --glow-primary: 265 90% 65%;
+
+    --sidebar-background: 240 20% 6%;
+    --sidebar-foreground: 240 10% 90%;
+    --sidebar-primary: 265 90% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 15% 14%;
+    --sidebar-accent-foreground: 240 10% 90%;
+    --sidebar-border: 265 30% 20%;
+    --sidebar-ring: 265 90% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: "Inter", sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Space Grotesk", sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    background: hsla(var(--glass-bg));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsla(var(--glass-border));
+  }
+
+  .glass-strong {
+    background: hsla(240 20% 10% / 0.8);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid hsla(265 40% 50% / 0.15);
+  }
+
+  .glow-button {
+    box-shadow:
+      0 0 20px hsla(var(--glow-primary) / 0.4),
+      0 0 60px hsla(var(--glow-primary) / 0.15);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .glow-button:hover {
+    box-shadow:
+      0 0 30px hsla(var(--glow-primary) / 0.6),
+      0 0 80px hsla(var(--glow-primary) / 0.25);
+  }
+
+  .glow-border {
+    box-shadow:
+      0 0 15px hsla(var(--glow-primary) / 0.15),
+      inset 0 0 15px hsla(var(--glow-primary) / 0.05);
+  }
+
+  .gradient-bg {
+    background: linear-gradient(
+      135deg,
+      hsl(240 25% 4%) 0%,
+      hsl(260 20% 8%) 40%,
+      hsl(280 15% 6%) 70%,
+      hsl(240 25% 4%) 100%
+    );
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(280 80% 75%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
